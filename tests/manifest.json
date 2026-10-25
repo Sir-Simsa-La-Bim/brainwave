@@ -1,0 +1,46 @@
+{
+  "languageVersion": "0.1",
+  "schema": {
+    "path": "relative path to the test file",
+    "expected": "accept or reject",
+    "category": "valid, lexical, syntax, semantic, or unverified",
+    "reason": "short expected result"
+  },
+  "tests": [
+    {"path":"valid/001_identity.brnw","expected":"accept","category":"valid","reason":"single-cell input-to-output mapping"},
+    {"path":"valid/002_add_mod256.brnw","expected":"accept","category":"valid","reason":"balanced loops and repetition suffixes"},
+    {"path":"valid/003_literals.brnw","expected":"accept","category":"valid","reason":"all major literal constructors and preserved block"},
+    {"path":"valid/004_slices_and_copies.brnw","expected":"accept","category":"valid","reason":"slices, negative index, and replicated input"},
+    {"path":"valid/005_io_and_repetition.brnw","expected":"accept","category":"valid","reason":"Brainfuck input/output and leading-zero repetition"},
+    {"path":"valid/006_balanced_nested_loop.brnw","expected":"accept","category":"valid","reason":"nested balanced pointer analysis"},
+    {"path":"valid/007_comments.brnw","expected":"accept","category":"valid","reason":"Brainfuck symbols inside comments are ignored"},
+    {"path":"valid/008_empty_signature.brnw","expected":"accept","category":"valid","reason":"empty input and output lists"},
+
+    {"path":"invalid-lexical/101_bad_hex.brnw","expected":"reject","category":"lexical","reason":"hexadecimal literal has no digits"},
+    {"path":"invalid-lexical/102_bad_escape.brnw","expected":"reject","category":"lexical","reason":"unknown string escape"},
+    {"path":"invalid-lexical/103_unterminated_comment.brnw","expected":"reject","category":"lexical","reason":"unterminated block comment"},
+
+    {"path":"invalid-syntax/201_wrong_section_order.brnw","expected":"reject","category":"syntax","reason":"mandatory sections are out of order"},
+    {"path":"invalid-syntax/202_missing_semicolon.brnw","expected":"reject","category":"syntax","reason":"entry statement lacks semicolon"},
+    {"path":"invalid-syntax/203_empty_layout.brnw","expected":"reject","category":"syntax","reason":"layout grammar requires at least one item"},
+    {"path":"invalid-syntax/204_slice_step.brnw","expected":"reject","category":"syntax","reason":"slice steps are unsupported"},
+    {"path":"invalid-syntax/205_goto_slice.brnw","expected":"reject","category":"syntax","reason":"goto accepts an index but not a slice"},
+
+    {"path":"invalid-semantic/301_duplicate_name.brnw","expected":"reject","category":"semantic","reason":"input and output names share one namespace"},
+    {"path":"invalid-semantic/302_missing_output.brnw","expected":"reject","category":"semantic","reason":"declared output is not assigned"},
+    {"path":"invalid-semantic/303_duplicate_output.brnw","expected":"reject","category":"semantic","reason":"output byte is assigned twice"},
+    {"path":"invalid-semantic/304_layout_size_mismatch.brnw","expected":"reject","category":"semantic","reason":"entry and exit expansions differ"},
+    {"path":"invalid-semantic/305_empty_slice.brnw","expected":"reject","category":"semantic","reason":"slice expands to zero bytes"},
+    {"path":"invalid-semantic/306_output_in_entry.brnw","expected":"reject","category":"semantic","reason":"entry layouts may reference inputs only"},
+    {"path":"invalid-semantic/307_unknown_block.brnw","expected":"reject","category":"semantic","reason":"goto target is not a declared block"},
+    {"path":"invalid-semantic/308_code_before_goto.brnw","expected":"reject","category":"semantic","reason":"Brainfuck command precedes initial goto"},
+    {"path":"invalid-semantic/309_unknown_pointer_at_exit.brnw","expected":"reject","category":"semantic","reason":"unbalanced loop leaves pointer unknown"},
+    {"path":"invalid-semantic/310_bad_integer_width.brnw","expected":"reject","category":"semantic","reason":"constructor width is not divisible by eight"},
+    {"path":"invalid-semantic/311_zero_repeat.brnw","expected":"reject","category":"semantic","reason":"repetition count must be positive"},
+    {"path":"invalid-semantic/312_missing_block_exit.brnw","expected":"reject","category":"semantic","reason":"every entry block requires one exit"},
+
+    {"path":"valid-unverified/401_unbalanced_with_hint.brnw","expected":"accept","category":"unverified","reason":"hint restores pointer knowledge but may be trusted"},
+    {"path":"valid-unverified/402_exit_assertions.brnw","expected":"accept","category":"unverified","reason":"input and literal exit assertions need not be proven"},
+    {"path":"valid-unverified/403_preserved_unknown.brnw","expected":"accept","category":"unverified","reason":"preserved asserts identity of an unknown entry byte"}
+  ]
+}

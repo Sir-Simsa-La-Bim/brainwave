@@ -1,0 +1,6 @@
+def bad() -> (byte output)
+{
+    entry { work <= (out.output); }
+    code { goto(work); }
+    exit { work => (output); }
+}

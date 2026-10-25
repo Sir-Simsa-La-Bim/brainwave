@@ -1,0 +1,9 @@
+def echo() -> ()
+{
+    entry { io <= (0); }
+    code {
+        goto(io);
+        ,.+003-3
+    }
+    exit { io => (?); }
+}

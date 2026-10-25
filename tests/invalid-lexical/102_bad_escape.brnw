@@ -1,0 +1,6 @@
+def bad() -> ()
+{
+    entry { work <= (ascii("bad\q")); }
+    code { goto(work); }
+    exit { work => (?); }
+}

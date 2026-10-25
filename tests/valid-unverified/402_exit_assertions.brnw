@@ -1,0 +1,6 @@
+def asserted(byte value) -> ()
+{
+    entry { work <= (value, ?, 0); }
+    code { goto(work); }
+    exit { work => (in.value, ?, 0); }
+}

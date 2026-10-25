@@ -1,0 +1,12 @@
+def comments(byte a) -> (byte result)
+{
+    entry {
+        // + - < > [ ] , . are ignored here
+        work <= (a);
+    }
+    code {
+        goto(work); # [>] is ignored here
+        /* +++[>---<-] is ignored here */
+    }
+    exit { work => (result); }
+}

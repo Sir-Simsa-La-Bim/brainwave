@@ -1,0 +1,6 @@
+def preserveUnknown() -> ()
+{
+    entry { work <= (?, ascii('OK')); }
+    code { goto(work); }
+    exit { work => preserved; }
+}

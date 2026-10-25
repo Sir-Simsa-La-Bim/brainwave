@@ -1,0 +1,6 @@
+def interact() -> ()
+{
+    entry { state <= (?); }
+    code { goto(state); }
+    exit { state => (?); }
+}

@@ -1,0 +1,10 @@
+def add(byte a, byte b) -> (byte sum)
+{
+    entry { work <= (a, b, 0); }
+    code {
+        goto(work);
+        [->2+<2]
+        >[->+<]
+    }
+    exit { work => (0, 0, sum); }
+}

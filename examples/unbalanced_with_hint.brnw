@@ -1,0 +1,10 @@
+def scan(byte first) -> ()
+{
+    entry { work <= (first, 0); }
+    code {
+        goto(work);
+        [>]
+        hint(work[-1]);
+    }
+    exit { work => (?, 0); }
+}

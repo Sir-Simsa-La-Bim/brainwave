@@ -1,0 +1,7 @@
+def bad() -> ()
+{
+    entry { work <= (0); }
+    /* never closed
+    code { goto(work); }
+    exit { work => (0); }
+}

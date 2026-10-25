@@ -1,0 +1,9 @@
+def nested(byte count) -> ()
+{
+    entry { work <= (count, 0, 0); }
+    code {
+        goto(work);
+        [->[->+<]<]
+    }
+    exit { work => (?, ?, ?); }
+}

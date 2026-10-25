@@ -1,0 +1,6 @@
+def bad(byte input) -> (byte output)
+{
+    entry { first <= (input); second <= (input); }
+    code { goto(first); }
+    exit { first => (output); second => (output); }
+}

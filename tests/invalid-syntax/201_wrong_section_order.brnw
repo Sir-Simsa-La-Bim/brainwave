@@ -1,0 +1,6 @@
+def bad() -> ()
+{
+    code { goto(work); }
+    entry { work <= (0); }
+    exit { work => (0); }
+}

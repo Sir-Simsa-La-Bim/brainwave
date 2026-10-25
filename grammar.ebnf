@@ -1,0 +1,439 @@
+(* Brainwave
+   Source file extension: .brnw
+   Full grammar draft
+
+   Lexical processing:
+   - Whitespace and comments may occur between tokens unless a production
+     explicitly describes a single lexical token.
+   - Comments are treated as whitespace.
+   - The lexer should prefer the longest valid token.
+   - Context-sensitive and semantic restrictions are listed after the grammar.
+*)
+
+(* =========================
+   Syntactic grammar
+   ========================= *)
+
+function =
+    "def", identifier,
+    "(", [ declaration_list ], ")",
+    "->",
+    "(", [ declaration_list ], ")",
+    "{",
+        entry_section,
+        code_section,
+        exit_section,
+    "}";
+
+entry_section =
+    "entry", "{", { entry_statement }, "}";
+
+code_section =
+    "code", "{", { code_element }, "}";
+
+exit_section =
+    "exit", "{", { exit_statement }, "}";
+
+(* Function signature *)
+
+declaration_list =
+    declaration, { ",", declaration }, [ "," ];
+
+declaration =
+    type, identifier;
+
+type =
+    "byte", [ "[", integer_literal, "]" ];
+
+(* Entry and exit layouts *)
+
+entry_statement =
+    identifier, "<=", layout, ";";
+
+exit_statement =
+    identifier, "=>", ( layout | "preserved" ), ";";
+
+layout =
+    "(", layout_item, { ",", layout_item }, [ "," ], ")";
+
+layout_item =
+      reference
+    | integer_literal
+    | typed_literal
+    | unknown_cell;
+
+unknown_cell =
+    "?";
+
+(* Logical input and output references *)
+
+reference =
+    [ namespace, "." ], identifier, [ selector ];
+
+namespace =
+    "in" | "out";
+
+selector =
+      "[", integer_literal, "]"
+    | "[", [ integer_literal ], ":", [ integer_literal ], "]";
+
+(* Code section *)
+
+code_element =
+      brainfuck_command
+    | repeated_command
+    | goto_statement
+    | hint_statement;
+
+brainfuck_command =
+      "+"
+    | "-"
+    | "<"
+    | ">"
+    | "."
+    | ","
+    | "["
+    | "]";
+
+repeated_command =
+    repeatable_command, repeat_count;
+
+repeatable_command =
+    "+" | "-" | "<" | ">";
+
+(* repeat_count is attached directly to the command, with no intervening
+   whitespace or comment. Its numeric value must be greater than zero. *)
+repeat_count =
+    decimal_digit, { decimal_digit };
+
+goto_statement =
+    "goto", "(", block_location, ")", ";";
+
+hint_statement =
+    "hint", "(", block_location, ")", ";";
+
+block_location =
+    identifier, [ "[", integer_literal, "]" ];
+
+(* Typed literals *)
+
+typed_literal =
+      integer_constructor
+    | float_constructor
+    | string_constructor;
+
+integer_constructor =
+    integer_constructor_name, "(", integer_literal, ")";
+
+(* A single token with no whitespace between the prefix and width.
+   The width must be positive and divisible by 8. *)
+integer_constructor_name =
+    ( "u" | "i" ), decimal_digit, { decimal_digit };
+
+float_constructor =
+      "float16", "(", float_value, ")"
+    | "float32", "(", float_value, ")"
+    | "float64", "(", float_value, ")";
+
+float_value =
+      floating_literal
+    | "inf"
+    | "-", "inf"
+    | "nan";
+
+string_constructor =
+      "ascii", "(", string_literal, ")"
+    | "utf8", "(", string_literal, ")";
+
+(* =========================
+   Lexical grammar
+   ========================= *)
+
+identifier =
+    identifier_start, { identifier_character };
+
+identifier_start =
+    ascii_letter | "_";
+
+identifier_character =
+    ascii_letter | decimal_digit | "_";
+
+ascii_letter =
+      "A" | "B" | "C" | "D" | "E" | "F" | "G"
+    | "H" | "I" | "J" | "K" | "L" | "M" | "N"
+    | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
+    | "V" | "W" | "X" | "Y" | "Z"
+    | "a" | "b" | "c" | "d" | "e" | "f" | "g"
+    | "h" | "i" | "j" | "k" | "l" | "m" | "n"
+    | "o" | "p" | "q" | "r" | "s" | "t" | "u"
+    | "v" | "w" | "x" | "y" | "z";
+
+integer_literal =
+    [ "-" ], unsigned_integer_literal;
+
+unsigned_integer_literal =
+      hexadecimal_integer
+    | binary_integer
+    | decimal_integer;
+
+decimal_integer =
+    decimal_digit, { decimal_digit };
+
+hexadecimal_integer =
+    "0x", hexadecimal_digit, { hexadecimal_digit };
+
+binary_integer =
+    "0b", binary_digit, { binary_digit };
+
+floating_literal =
+    [ "-" ], unsigned_floating_literal;
+
+unsigned_floating_literal =
+      decimal_digits, ".", [ decimal_digits ], [ exponent ]
+    | ".", decimal_digits, [ exponent ]
+    | decimal_digits, exponent
+    | decimal_digits;
+
+exponent =
+    ( "e" | "E" ), [ "+" | "-" ], decimal_digits;
+
+decimal_digits =
+    decimal_digit, { decimal_digit };
+
+decimal_digit =
+    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
+binary_digit =
+    "0" | "1";
+
+hexadecimal_digit =
+      decimal_digit
+    | "a" | "b" | "c" | "d" | "e" | "f"
+    | "A" | "B" | "C" | "D" | "E" | "F";
+
+(* String literals *)
+
+string_literal =
+    double_quoted_string | single_quoted_string;
+
+double_quoted_string =
+    '"', { double_string_character }, '"';
+
+single_quoted_string =
+    "'", { single_string_character }, "'";
+
+double_string_character =
+      double_unescaped_character
+    | escape_sequence;
+
+single_string_character =
+      single_unescaped_character
+    | escape_sequence;
+
+(* These character classes are described negatively because standard EBNF
+   has no universal notation for Unicode character-set subtraction. *)
+double_unescaped_character =
+    ? any Unicode scalar value except double quote, backslash, CR, or LF ?;
+
+single_unescaped_character =
+    ? any Unicode scalar value except single quote, backslash, CR, or LF ?;
+
+escape_sequence =
+    "\\", (
+          "\\"
+        | "'"
+        | '"'
+        | "0"
+        | "n"
+        | "r"
+        | "t"
+        | hex_byte_escape
+        | unicode_short_escape
+        | unicode_long_escape
+    );
+
+hex_byte_escape =
+    "x", hexadecimal_digit, hexadecimal_digit;
+
+unicode_short_escape =
+    "u",
+    hexadecimal_digit, hexadecimal_digit,
+    hexadecimal_digit, hexadecimal_digit;
+
+unicode_long_escape =
+    "U",
+    hexadecimal_digit, hexadecimal_digit,
+    hexadecimal_digit, hexadecimal_digit,
+    hexadecimal_digit, hexadecimal_digit,
+    hexadecimal_digit, hexadecimal_digit;
+
+(* Whitespace and comments *)
+
+ignored =
+    { whitespace | comment };
+
+whitespace =
+    space | horizontal_tab | carriage_return | line_feed;
+
+space = " ";
+horizontal_tab = ? U+0009 ?;
+carriage_return = ? U+000D ?;
+line_feed = ? U+000A ?;
+
+comment =
+      c_line_comment
+    | python_line_comment
+    | block_comment;
+
+c_line_comment =
+    "//", { line_comment_character }, [ line_ending ];
+
+python_line_comment =
+    "#", { line_comment_character }, [ line_ending ];
+
+line_comment_character =
+    ? any character except CR or LF ?;
+
+line_ending =
+      carriage_return, [ line_feed ]
+    | line_feed;
+
+(* Block comments are non-nested and end at the first closing delimiter. *)
+block_comment =
+    "/*", { block_comment_character }, "*/";
+
+block_comment_character =
+    ? any character that does not begin the block-comment closing delimiter ?;
+
+(* =========================
+   Reserved words
+   ========================= *)
+
+(* The following exact identifiers are reserved:
+
+   def byte entry code exit goto hint in out preserved
+   float16 float32 float64 ascii utf8 inf nan
+
+   Every identifier matching integer_constructor_name is also reserved,
+   including forms whose width would later fail semantic validation.
+*)
+
+(* =========================
+   Normative semantic constraints
+   ========================= *)
+
+(*  1. A function contains exactly one entry, code, and exit section in that
+       order, as enforced by the syntax.
+
+    2. Inputs, outputs, and blocks share one namespace. Their identifiers must
+       be unique within the function.
+
+    3. A byte-array size must evaluate to an integer greater than zero. It is
+       not reduced modulo 256.
+
+    4. Each block identifier must occur exactly once on the left side of an
+       entry_statement and exactly once on the left side of an exit_statement.
+       Blocks may not overlap. Their relative tape order is unspecified.
+
+    5. A layout is nonempty by grammar. It is flat; nested layouts are not
+       permitted. Its items expand from left to right into consecutive cells.
+
+    6. Entry layouts may reference inputs only. They may not reference outputs
+       or blocks. Exit layouts may reference inputs and outputs, but not blocks.
+       A namespace qualifier, when present, must match the declaration kind.
+
+    7. A bare logical reference expands to all bytes of that declaration.
+       Indexing is zero-based. Negative indices count from the end. Slice starts
+       are inclusive and ends exclusive. Slice steps are unsupported. Empty
+       slices and out-of-range indices or slice boundaries are errors when
+       statically detectable.
+
+    8. Each input byte may occur zero, one, or multiple times in entry layouts.
+       Each occurrence denotes a separate physical cell initialized with the
+       same logical value.
+
+    9. Every declared output byte must occur exactly once across all ordinary
+       exit layouts. One physical cell may supply at most one output byte.
+
+   10. The expanded size of an ordinary exit layout must equal the expanded
+       size of its matching entry layout.
+
+   11. "preserved" may occur only as the complete right side of an exit
+       statement. It asserts that every cell in the block contains exactly its
+       own entry value at exit. It does not assign output bytes.
+
+   12. An unwrapped integer in a layout occupies one cell and is reduced modulo
+       256.
+
+   13. An integer constructor width is the decimal suffix of its constructor
+       name. The width must be greater than zero and divisible by 8. The value
+       is reduced modulo 2^width and emitted in little-endian byte order. The
+       prefixes u and i document interpretation but do not change emitted bits.
+
+   14. Floating constructors use IEEE 754 binary16, binary32, and binary64,
+       emitted in little-endian byte order. Decimal conversion uses round to
+       nearest, ties to even. The literals inf, -inf, and nan are accepted.
+       nan emits the canonical positive quiet-NaN patterns 0x7E00,
+       0x7FC00000, and 0x7FF8000000000000 respectively. Negative zero is valid.
+
+   15. ascii and utf8 add no implicit terminator. Adjacent string literals are
+       not concatenated. ascii accepts ASCII characters plus arbitrary bytes
+       introduced with x escapes. utf8 encodes Unicode scalar values as UTF-8.
+       Invalid escapes, surrogate code points, and values above U+10FFFF are
+       errors.
+
+   16. The first executable element in code must be goto_statement. No raw
+       Brainfuck command or hint_statement may precede it.
+
+   17. goto and hint locations must name exactly one cell of a declared block.
+       A bare block name means index zero. Negative indices are allowed. Slices
+       are not allowed.
+
+   18. goto emits the pointer movement required to reach its target. Apart from
+       the special initial goto, goto requires the compiler-known pointer
+       position to be known.
+
+   19. hint emits no Brainfuck command. It asserts the current pointer location
+       and resumes compiler pointer tracking from that location. A compiler may,
+       but need not, diagnose a hint it can prove false.
+
+   20. goto and hint may occur inside Brainfuck loops. Brackets must be properly
+       matched. The compiler tracks pointer movement through nested loops whose
+       bodies have statically known net displacement zero. After an unbalanced
+       loop, pointer position is unknown until a hint. Pointer position must be
+       known at the end of code.
+
+   21. A repeat_count is attached directly to its command with no intervening
+       ignored text. Its decimal value must be greater than zero. Leading zeros
+       are allowed. A command without a suffix has count one. For example,
+       "+-3" tokenizes as "+" followed by "-3".
+
+   22. Implementations may optimize + and - repetition modulo 256. They must not
+       reduce < or > repetition modulo 256.
+
+   23. Raw Brainfuck may access cells outside declared blocks. Such cells have
+       no entry contract, cannot be referenced by exit layouts, and must not be
+       assumed to belong to or neighbor another declared block.
+
+   24. Entry layouts are preconditions supplied by the compiler or parent
+       system. Exit literals, exit input references, preserved, and hint are
+       author assertions. A compiler is not required to prove them, but may
+       reject assertions it can prove false.
+
+   25. Comments are removed before code elements are recognized. Brainfuck
+       characters inside comments have no effect. Block comments do not nest.
+
+   26. Repetition suffixes use their dedicated decimal grammar. All other
+       integer-bearing constructs use integer_literal, with context-specific
+       range checks and no implicit modulo reduction except where stated.
+*)
+
+(* =========================
+   Non-normative implementation notes
+   ========================= *)
+
+(* Implementations may infer any function properties useful to their parent
+   system, such as I/O use, unbalanced loops, hints, or access outside declared
+   blocks. They may also assign implementation-defined meaning to selected
+   function names, for example addUint. Neither flags nor special names are
+   prescribed by this grammar. *)
